@@ -961,12 +961,25 @@
     buttonSelectors.forEach((selector) => {
       const buttons = document.querySelectorAll(selector);
       buttons.forEach((button) => {
-        const text = button.textContent.toLowerCase();
+        const text = button.textContent.toLowerCase().trim();
         const ariaLabel = (button.getAttribute('aria-label') || '').toLowerCase();
         const isShowMore = text.includes('more') ||
                           text.includes('see all') ||
                           ariaLabel.includes('show more') ||
                           button.classList.contains('show-more-less-html__button--more');
+
+        // Skip if it's just "..." menu button
+        if (text === '...' || text === '…') {
+          if (DEBUG) log('Skipping menu button:', text);
+          return;
+        }
+
+        // Skip buttons in the top navigation area
+        const rect = button.getBoundingClientRect();
+        if (rect.top < 150) {
+          if (DEBUG) log('Skipping button in header/nav area:', text);
+          return;
+        }
 
         if (isShowMore) {
           try {
@@ -1914,33 +1927,45 @@
       const statusDiv = document.getElementById('applyfast-status');
       const contentDiv = document.getElementById('applyfast-content');
 
-      chrome.storage.local.get('userProfile', (data) => {
-        const profile = data.userProfile || {};
+      try {
+        chrome.storage.local.get('userProfile', (data) => {
+          if (chrome.runtime.lastError) {
+            error('Extension context invalidated - page needs refresh:', chrome.runtime.lastError);
+            if (statusDiv) {
+              statusDiv.innerHTML = `
+                <span style="color: #eab308; font-weight: 600;">⚠️ Extension reloaded</span>
+                <br><span style="color: #64748b; font-size: 12px;">Please refresh the page</span>
+              `;
+            }
+            return;
+          }
 
-        let matchResult;
-        if (typeof detectDisqualifiers === 'function') {
-          const fullJobText = (jobData.description || '') + '\n' + (jobData.title || '');
-          const userProfileFormatted = {
-            yearsExperience: parseInt(profile.experience) || 0,
-            citizenship: profile.citizenship || 'unknown',
-            needsSponsorship: profile.needsSponsorship || false,
-            location: profile.location || '',
-            willingToRelocate: profile.willingToRelocate || false,
-            skills: profile.skills ? profile.skills.split(',').map(s => s.trim()) : [],
-          };
+          const profile = data.userProfile || {};
 
-          const disqualifierResult = detectDisqualifiers(fullJobText, userProfileFormatted);
-          matchResult = {
-            score: disqualifierResult.score,
-            status: disqualifierResult.status,
-            disqualifiers: disqualifierResult.disqualifiers,
-            warnings: disqualifierResult.warnings,
-            matched: disqualifierResult.matches,
-            missing: disqualifierResult.missingSkills,
-          };
-        } else {
-          matchResult = calculateMatch(jobData, profile);
-        }
+          let matchResult;
+          if (typeof detectDisqualifiers === 'function') {
+            const fullJobText = (jobData.description || '') + '\n' + (jobData.title || '');
+            const userProfileFormatted = {
+              yearsExperience: parseInt(profile.experience) || 0,
+              citizenship: profile.citizenship || 'unknown',
+              needsSponsorship: profile.needsSponsorship || false,
+              location: profile.location || '',
+              willingToRelocate: profile.willingToRelocate || false,
+              skills: profile.skills ? profile.skills.split(',').map(s => s.trim()) : [],
+            };
+
+            const disqualifierResult = detectDisqualifiers(fullJobText, userProfileFormatted);
+            matchResult = {
+              score: disqualifierResult.score,
+              status: disqualifierResult.status,
+              disqualifiers: disqualifierResult.disqualifiers,
+              warnings: disqualifierResult.warnings,
+              matched: disqualifierResult.matches,
+              missing: disqualifierResult.missingSkills,
+            };
+          } else {
+            matchResult = calculateMatch(jobData, profile);
+          }
 
         if (statusDiv) statusDiv.style.display = 'none';
         if (contentDiv) contentDiv.style.display = 'block';
@@ -2035,7 +2060,16 @@
             });
           }
         }
-      });
+        });
+      } catch (err) {
+        error('Error accessing extension storage:', err);
+        if (statusDiv) {
+          statusDiv.innerHTML = `
+            <span style="color: #eab308; font-weight: 600;">⚠️ Extension error</span>
+            <br><span style="color: #64748b; font-size: 12px;">Please refresh the page</span>
+          `;
+        }
+      }
     });
   }
 
