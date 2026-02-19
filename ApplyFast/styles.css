@@ -1,0 +1,46 @@
+/* ── ApplyFast Content Script Styles ─────────────────────────────
+   Injected into LinkedIn / Indeed pages.
+   Scoped with .applyfast- prefix to avoid conflicts.
+   ─────────────────────────────────────────────────────────────── */
+
+.applyfast-overlay {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 999999;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.applyfast-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #1e3a5f, #0f172a);
+  color: #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid #334155;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.applyfast-badge:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+}
+
+.applyfast-badge .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  animation: applyfast-pulse 2s infinite;
+}
+
+@keyframes applyfast-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
