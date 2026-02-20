@@ -101,6 +101,96 @@
   }
 
   // ════════════════════════════════════════════════════════════════
+  //  JOB TITLE MATCHING
+  // ════════════════════════════════════════════════════════════════
+
+  /**
+   * Job title aliases and related positions
+   */
+  const JOB_TITLE_ALIASES = {
+    'software engineer': ['backend engineer', 'frontend engineer', 'full stack engineer', 'fullstack engineer',
+                          'software developer', 'software dev', 'app developer', 'application developer',
+                          'sde', 'swe', 'swd', 'developer', 'engineer', 'full stack developer',
+                          'backend developer', 'frontend developer', 'web developer', 'application engineer'],
+    'data scientist': ['data analyst', 'machine learning engineer', 'ml engineer', 'ai engineer',
+                       'data engineer', 'analytics engineer', 'research scientist', 'applied scientist',
+                       'mlops engineer', 'ai researcher'],
+    'product manager': ['product owner', 'technical product manager', 'associate product manager',
+                        'senior product manager', 'product lead', 'program manager', 'tpm'],
+    'designer': ['ui designer', 'ux designer', 'ui/ux designer', 'product designer',
+                 'visual designer', 'graphic designer', 'interaction designer', 'experience designer'],
+    'devops engineer': ['site reliability engineer', 'sre', 'platform engineer', 'infrastructure engineer',
+                        'cloud engineer', 'systems engineer', 'build engineer', 'release engineer'],
+    'qa engineer': ['quality assurance engineer', 'test engineer', 'sdet', 'automation engineer',
+                    'software tester', 'qa analyst', 'quality engineer'],
+    'security engineer': ['cybersecurity engineer', 'information security engineer', 'security analyst',
+                          'infosec engineer', 'application security engineer', 'appsec engineer'],
+    'mobile developer': ['ios developer', 'android developer', 'mobile engineer', 'ios engineer',
+                         'android engineer', 'mobile app developer'],
+    'data engineer': ['etl developer', 'big data engineer', 'data pipeline engineer',
+                      'analytics engineer', 'data platform engineer'],
+    'solutions architect': ['cloud architect', 'enterprise architect', 'technical architect',
+                            'software architect', 'systems architect'],
+  };
+
+  /**
+   * Check if job title matches user's preferred title
+   */
+  function isJobTitleMatch(jobTitle, userPreferredTitle) {
+    if (!jobTitle || !userPreferredTitle) return true; // No warning if either is missing
+
+    const normalizedJobTitle = jobTitle.toLowerCase().trim();
+    const normalizedUserTitle = userPreferredTitle.toLowerCase().trim();
+
+    // Direct match
+    if (normalizedJobTitle.includes(normalizedUserTitle) ||
+        normalizedUserTitle.includes(normalizedJobTitle)) {
+      return true;
+    }
+
+    // Check aliases - both ways
+    for (const [baseTitle, aliases] of Object.entries(JOB_TITLE_ALIASES)) {
+      const allTitles = [baseTitle, ...aliases];
+
+      // Check if user's title is in this group
+      const userTitleInGroup = allTitles.some(title =>
+        normalizedUserTitle.includes(title) || title.includes(normalizedUserTitle)
+      );
+
+      // Check if job title is in this group
+      const jobTitleInGroup = allTitles.some(title =>
+        normalizedJobTitle.includes(title) || title.includes(normalizedJobTitle)
+      );
+
+      // If both are in the same group, they match
+      if (userTitleInGroup && jobTitleInGroup) {
+        return true;
+      }
+    }
+
+    // Check for common abbreviations
+    const abbreviations = {
+      'sde': 'software development engineer',
+      'swe': 'software engineer',
+      'swd': 'software developer',
+      'sre': 'site reliability engineer',
+      'tpm': 'technical program manager',
+      'pm': 'product manager',
+      'sdet': 'software development engineer in test',
+      'qa': 'quality assurance',
+    };
+
+    for (const [abbr, full] of Object.entries(abbreviations)) {
+      if ((normalizedJobTitle === abbr && normalizedUserTitle.includes(full)) ||
+          (normalizedUserTitle === abbr && normalizedJobTitle.includes(full))) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  // ════════════════════════════════════════════════════════════════
   //  JOB DESCRIPTION VALIDATION
   // ════════════════════════════════════════════════════════════════
 
@@ -1554,6 +1644,11 @@
           <span>Analyzing job...</span>
         </div>
         <div class="applyfast-content" id="applyfast-content" style="display: none;">
+          <div class="applyfast-title-warning" id="applyfast-title-warning" style="display: none;">
+            <div class="applyfast-warning-icon">⚠️</div>
+            <div class="applyfast-warning-text">Job Mismatch</div>
+            <button class="applyfast-ignore-btn" id="applyfast-ignore-warning">Ignore</button>
+          </div>
           <div class="applyfast-score-ring">
             <svg viewBox="0 0 36 36" class="applyfast-circular-chart">
               <path class="applyfast-circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
@@ -1733,6 +1828,46 @@
       .applyfast-match-label.medium { color: #eab308; }
       .applyfast-match-label.low { color: #ef4444; }
 
+      .applyfast-title-warning {
+        background: rgba(234, 179, 8, 0.1);
+        border: 1px solid rgba(234, 179, 8, 0.3);
+        border-radius: 8px;
+        padding: 10px 12px;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .applyfast-warning-icon {
+        font-size: 18px;
+        line-height: 1;
+      }
+
+      .applyfast-warning-text {
+        flex: 1;
+        font-size: 13px;
+        font-weight: 600;
+        color: #eab308;
+      }
+
+      .applyfast-ignore-btn {
+        background: rgba(234, 179, 8, 0.2);
+        border: 1px solid rgba(234, 179, 8, 0.4);
+        border-radius: 6px;
+        padding: 4px 12px;
+        font-size: 11px;
+        font-weight: 600;
+        color: #eab308;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .applyfast-ignore-btn:hover {
+        background: rgba(234, 179, 8, 0.3);
+        border-color: rgba(234, 179, 8, 0.6);
+      }
+
       .applyfast-skills {
         display: flex;
         flex-wrap: wrap;
@@ -1806,11 +1941,21 @@
     const closeBtn = document.getElementById('applyfast-close');
     const applyBtn = document.getElementById('applyfast-apply-btn');
     const settingsLink = document.getElementById('applyfast-settings');
+    const ignoreWarningBtn = document.getElementById('applyfast-ignore-warning');
 
     if (closeBtn) {
       closeBtn.addEventListener('click', () => {
         const panel = document.getElementById('applyfast-panel');
         if (panel) panel.remove();
+      });
+    }
+
+    if (ignoreWarningBtn) {
+      ignoreWarningBtn.addEventListener('click', () => {
+        const warningDiv = document.getElementById('applyfast-title-warning');
+        if (warningDiv) {
+          warningDiv.style.display = 'none';
+        }
       });
     }
 
@@ -1969,6 +2114,19 @@
 
         if (statusDiv) statusDiv.style.display = 'none';
         if (contentDiv) contentDiv.style.display = 'block';
+
+        // Check for job title mismatch
+        const titleWarningDiv = document.getElementById('applyfast-title-warning');
+        const userPreferredTitle = profile.preferredJobTitle || profile.jobTitle || '';
+        const isTitleMatch = isJobTitleMatch(jobData.title, userPreferredTitle);
+
+        if (titleWarningDiv) {
+          if (!isTitleMatch && userPreferredTitle) {
+            titleWarningDiv.style.display = 'flex';
+          } else {
+            titleWarningDiv.style.display = 'none';
+          }
+        }
 
         const scoreCircle = document.getElementById('applyfast-score-circle');
         const scoreText = document.getElementById('applyfast-score-text');
